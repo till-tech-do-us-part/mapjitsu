@@ -1,15 +1,33 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-
-const MAPJITSU_STYLE_URL = 'mapbox://styles/mapbox/standard';
+import { useMapStore } from '@/stores/mapStore';
+import { useLighting } from '@/components/map/LightingController';
+import { CameraController } from '@/components/map/CameraController';
+import { SearchBox } from '@/components/map/SearchBox';
+import { JitsuChat } from '@/components/ai/JitsuChat';
+import { MAPJITSU_STYLE_URL } from '@/lib/mapbox/styles';
 
 export function MapContainer() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const [loaded, setLoaded] = useState(false);
+
+  const {
+    map,
+    setMap,
+    setLoaded,
+    loaded,
+    center,
+    zoom,
+    pitch,
+    bearing,
+    lightPreset
+  } = useMapStore();
+
+  // Apply lighting preset
+  useLighting(map, lightPreset);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -22,31 +40,31 @@ export function MapContainer() {
 
     mapboxgl.accessToken = token;
 
-    const map = new mapboxgl.Map({
+    const newMap = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: MAPJITSU_STYLE_URL,
-      center: [-122.4194, 37.7749], // San Francisco
-      zoom: 14,
-      pitch: 45,
-      bearing: -17.6,
+      center: [center.lng, center.lat],
+      zoom,
+      pitch,
+      bearing,
       antialias: true,
     });
 
-    map.on('load', () => {
+    newMap.on('load', () => {
       // Configure Standard Style for night mode
-      map.setConfigProperty('basemap', 'lightPreset', 'night');
+      newMap.setConfigProperty('basemap', 'lightPreset', lightPreset);
 
       // Add 3D terrain
-      map.addSource('mapbox-dem', {
+      newMap.addSource('mapbox-dem', {
         type: 'raster-dem',
         url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
         tileSize: 512,
         maxzoom: 14,
       });
-      map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+      newMap.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
 
       // Add fog for atmosphere
-      map.setFog({
+      newMap.setFog({
         color: 'rgb(15, 23, 42)',
         'high-color': 'rgb(30, 41, 59)',
         'horizon-blend': 0.1,
@@ -57,20 +75,27 @@ export function MapContainer() {
       setLoaded(true);
     });
 
-    mapRef.current = map;
+    mapRef.current = newMap;
+    setMap(newMap);
 
     return () => {
-      map.remove();
+      newMap.remove();
       mapRef.current = null;
+      setMap(null);
     };
   }, []);
 
   return (
-    <div
-      ref={mapContainerRef}
-      data-testid="map-container"
-      data-loaded={loaded}
-      className="w-full h-screen"
-    />
+    <div className="relative w-full h-screen">
+      <div
+        ref={mapContainerRef}
+        data-testid="map-container"
+        data-loaded={loaded}
+        className="w-full h-full"
+      />
+      {loaded && <SearchBox />}
+      {loaded && <CameraController />}
+      {loaded && <JitsuChat />}
+    </div>
   );
 }
