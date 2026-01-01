@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #020617;
+  --foreground: #f8fafc;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Mapbox GL CSS overrides for cyberpunk theme */
+.mapboxgl-ctrl-attrib {
+  background-color: rgba(2, 6, 23, 0.8) !important;
+  color: #f8fafc !important;
+}
+
+.mapboxgl-ctrl-attrib a {
+  color: #3b82f6 !important;
+}
+
+.mapboxgl-ctrl-group {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.mapboxgl-ctrl-group button {
+  filter: invert(1);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
